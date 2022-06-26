@@ -91,39 +91,19 @@ impl NearP2P {
     pub fn get_balance_near(self) -> Balance {
         env::account_balance()
     }
-}
 
-    /*#[test]
-    fn set_order() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        //let attached_deposit = env::attached_deposit();
-        let mut contract = NearP2P::default();
-        let account_id = "p2p-testnet.testnet".to_string();
-        let asset = "NEAR".to_string();
-        let price = "14.5".to_string();
-        let amount = "100".to_string();
-        let min_limit = "10".to_string();
-        let max_limit = "100".to_string();
-        let order_type = 1;
-        let payment_method = 1;
-        let orders_completed = 0;
-        let percentaje_completion = 0;
-        let badge = "super star".to_string();
-        //contract.set_offers(account_id, asset, price, amount, min_limit, max_limit, order_type, payment_method, orders_completed, percentaje_completion, badge);
-        //assert_eq!(contract.get_offers().len(), 1);
-    }
-
-    #[test]
-    fn test_lock() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        //let attached_deposit = env::attached_deposit();
-        let mut contract = NearP2P::default();
-        let escrow_account_id = env::predecessor_account_id();
-        let account_id = "p2p-testnet.testnet".to_string();
-        //contract.lock(account_id.to_string());
-        //print!("Locked balance: {}", contract.get_locked_balance(account_id.to_string(), escrow_account_id));
+    /*pub fn delete_contract(&mut self) {
+        if env::predecessor_account_id() == self.owner_id {
+            //require!(env::promise_results_count() == 0, "There are pending promises");
+            require!(promise_result_as_success() != None, "No se pudo transferir el dinero, no hay suficiente");
+        }
+        let mut correct_caller: bool = false;
+        if env::signer_account_id() == self.user_id 
+        || env::predecessor_account_id() == env::current_account_id()
+        || env::signer_account_id() == self.mediator_id {
+            correct_caller = true;
+        }
+        require!(correct_caller, "Only the owner or the user can delete the contract");
+        Promise::new(AccountId::from(env::current_account_id())).delete_account(AccountId::from(self.owner_id.clone()));
     }*/
-
-
+}
