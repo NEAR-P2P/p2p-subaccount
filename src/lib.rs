@@ -92,18 +92,4 @@ impl NearP2P {
         env::account_balance()
     }
 
-    /*pub fn delete_contract(&mut self) {
-        if env::predecessor_account_id() == self.owner_id {
-            //require!(env::promise_results_count() == 0, "There are pending promises");
-            require!(promise_result_as_success() != None, "No se pudo transferir el dinero, no hay suficiente");
-        }
-        let mut correct_caller: bool = false;
-        if env::signer_account_id() == self.user_id 
-        || env::predecessor_account_id() == env::current_account_id()
-        || env::signer_account_id() == self.mediator_id {
-            correct_caller = true;
-        }
-        require!(correct_caller, "Only the owner or the user can delete the contract");
-        Promise::new(AccountId::from(env::current_account_id())).delete_account(AccountId::from(self.owner_id.clone()));
-    }*/
 }
