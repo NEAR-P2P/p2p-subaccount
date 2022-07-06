@@ -61,9 +61,16 @@ impl NearP2P {
         }
     }
 
+    pub fn update_new(&mut self, owner_id: AccountId, user_admin: AccountId, vault: AccountId) {
+        require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
+        self.owner_id = owner_id;
+        self.user_admin = user_admin;
+        self.vault = vault;
+    }
+
     #[payable]    
     pub fn transfer(&mut self, receiver_id: AccountId, operation_amount: u128, fee_deducted: u128, contract_ft: Option<AccountId>) {
-        require!(env::attached_deposit() >= 1, "Only administrators");
+        require!(env::attached_deposit() >= 1, "Requires attached deposit of at least 1 yoctoNEAR");
         require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
         if contract_ft.is_some() {
             // transfer ft_token to owner
@@ -108,7 +115,7 @@ impl NearP2P {
         let balance_block_near: Balance = if self.balance_block.get(&"near".to_string()).is_some() { *self.balance_block.get(&"near".to_string()).unwrap() } else { 0 };
         let balance_general: Balance = env::account_balance();
         if (balance_general - balance_block_near) >= amount.0 {
-            self.balance_block.insert("near".to_string(), balance_block_near + amount.0);
+            self.balance_block.insert("NEAR".to_string(), balance_block_near + amount.0);
             true
         } else {
             false
