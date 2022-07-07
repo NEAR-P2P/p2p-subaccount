@@ -101,8 +101,15 @@ impl NearP2P {
         }    
     }
 
-    pub fn get_balance_near(self) -> Balance {
-        env::account_balance()
+    pub fn get_balance_near(self, balance_block: bool) -> Balance {
+        match balance_block {
+            false => env::account_balance(),
+            _=> env::account_balance() - *self.balance_block.get(&"NEAR".to_string()).or(Some(&0u128)).unwrap(),
+        }
+    }
+
+    pub fn get_balance_block_token(self, ft_token: String) -> Balance {
+        *self.balance_block.get(&ft_token).expect("The token does not have a locked balance")
     }
 
     pub fn delete_contract(&mut self) {
@@ -112,7 +119,7 @@ impl NearP2P {
 
     pub fn block_balance_near(&mut self, amount: U128) -> bool {
         require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
-        let balance_block_near: Balance = if self.balance_block.get(&"near".to_string()).is_some() { *self.balance_block.get(&"near".to_string()).unwrap() } else { 0 };
+        let balance_block_near: Balance = *self.balance_block.get(&"near".to_string()).or(Some(&0u128)).unwrap(); //if self.balance_block.get(&"near".to_string()).is_some() { *self.balance_block.get(&"near".to_string()).unwrap() } else { 0 };
         let balance_general: Balance = env::account_balance();
         if (balance_general - balance_block_near) >= amount.0 {
             self.balance_block.insert("NEAR".to_string(), balance_block_near + amount.0);
@@ -160,4 +167,5 @@ impl NearP2P {
             false
         }
     }
+
 }
