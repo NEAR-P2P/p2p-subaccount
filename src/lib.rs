@@ -28,7 +28,7 @@ trait ExtBalance {
 
 #[ext_contract(ext_internal)]
 trait ExtBlockBalance {
-    fn on_block_balance_token(self,
+    fn on_block_balance_token(&mut self,
         ft_token: String,
         amount: U128
     ) -> u128;
@@ -61,13 +61,6 @@ impl NearP2P {
             vault: vault,
             balance_block: HashMap::new(),
         }
-    }
-
-    pub fn update_new(&mut self, owner_id: AccountId, user_admin: AccountId, vault: AccountId) {
-        require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
-        self.owner_id = owner_id;
-        self.user_admin = user_admin;
-        self.vault = vault;
     }
 
     #[payable]    
@@ -156,7 +149,7 @@ impl NearP2P {
         ft_token: String,
         amount: U128
     ) -> bool {
-        require!(env::predecessor_account_id() == env::current_account_id(), "Only administrators");
+        require!(env::predecessor_account_id() == env::current_account_id() || env::predecessor_account_id() == self.user_admin, "Only administrators");
         env::log_str(format!("signer: {} - predecesor {}", env::signer_account_id(), env::predecessor_account_id()).as_str());
         let result = promise_result_as_success();
         if result.is_none() {
