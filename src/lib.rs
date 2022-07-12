@@ -27,12 +27,14 @@ trait ExtBalance {
 }
 
 #[ext_contract(ext_internal)]
-trait ExtBalance {
+trait ExtBlockBalance {
     fn on_block_balance_token(self,
         ft_token: String,
         amount: U128
     ) -> u128;
 }
+
+
 
 /*
 Near P2P Struct
@@ -69,24 +71,24 @@ impl NearP2P {
     }
 
     #[payable]    
-    pub fn transfer(&mut self, receiver_id: AccountId, operation_amount: u128, fee_deducted: u128, contract_ft: Option<AccountId>) {
+    pub fn transfer(&mut self, receiver_id: AccountId, operation_amount: U128, fee_deducted: U128, contract_ft: Option<AccountId>) {
         require!(env::attached_deposit() >= 1, "Requires attached deposit of at least 1 yoctoNEAR");
         require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
         if contract_ft.is_some() {
             // transfer ft_token to owner
             ext_tranfer_ft_token::ft_transfer(
                 receiver_id,
-                U128(operation_amount - fee_deducted),
+                U128(operation_amount.0 - fee_deducted.0),
                 None,
                 contract_ft.unwrap(),
                 1,
                 GAS_FOR_TRANSFER,
             );
-            if fee_deducted > 0 {
+            if fee_deducted.0 > 0 {
                 // tranfer ft_token fee al vault
                 ext_tranfer_ft_token::ft_transfer(
                     self.vault.clone(),
-                    U128(fee_deducted),
+                    U128(fee_deducted.0),
                     None,
                     self.vault.clone(),
                     1,
@@ -94,9 +96,9 @@ impl NearP2P {
                 );
             }
         } else {
-            Promise::new(receiver_id).transfer(operation_amount - fee_deducted);
-            if fee_deducted > 0 {
-                Promise::new(self.vault.clone()).transfer(fee_deducted);
+            Promise::new(receiver_id).transfer(operation_amount.0 - fee_deducted.0);
+            if fee_deducted.0 > 0 {
+                Promise::new(self.vault.clone()).transfer(fee_deducted.0);
             }
         }    
     }
@@ -119,7 +121,7 @@ impl NearP2P {
 
     pub fn block_balance_near(&mut self, amount: U128) -> bool {
         require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
-        let balance_block_near: Balance = *self.balance_block.get(&"near".to_string()).or(Some(&0u128)).unwrap(); //if self.balance_block.get(&"near".to_string()).is_some() { *self.balance_block.get(&"near".to_string()).unwrap() } else { 0 };
+        let balance_block_near: Balance = *self.balance_block.get(&"near".to_string()).or(Some(&0u128)).unwrap();
         let balance_general: Balance = env::account_balance();
         if (balance_general - balance_block_near) >= amount.0 {
             self.balance_block.insert("NEAR".to_string(), balance_block_near + amount.0);
@@ -150,17 +152,19 @@ impl NearP2P {
     }
 
     #[private]
-    fn on_block_balance_token(&mut self,
+    pub fn on_block_balance_token(&mut self,
         ft_token: String,
         amount: U128
     ) -> bool {
+        require!(env::predecessor_account_id() == env::current_account_id(), "Only administrators");
+        env::log_str(format!("signer: {} - predecesor {}", env::signer_account_id(), env::predecessor_account_id()).as_str());
         let result = promise_result_as_success();
         if result.is_none() {
             env::panic_str("Error bloquear balance token".as_ref());
         }
-        let balance_block_token: Balance = if self.balance_block.get(&ft_token).is_some() { *self.balance_block.get(&ft_token).unwrap() } else { 0 };
-        let balance_general: Balance = near_sdk::serde_json::from_slice::<u128>(&result.unwrap()).expect("u128");
-        if (balance_general - balance_block_token) >= amount.0 {
+        let balance_block_token: Balance = *self.balance_block.get(&ft_token).or(Some(&0u128)).unwrap();
+        let balance_general: U128 = near_sdk::serde_json::from_slice::<U128>(&result.unwrap()).expect("U128");
+        if (balance_general.0 - balance_block_token) >= amount.0 {
             self.balance_block.insert(ft_token, balance_block_token + amount.0);
             true
         } else {
