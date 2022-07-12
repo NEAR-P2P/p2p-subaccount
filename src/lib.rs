@@ -7,7 +7,6 @@ use near_sdk::{env, near_bindgen, AccountId, Promise, ext_contract, Gas, Balance
 use near_sdk::json_types::U128;
 use std::collections::HashMap;
 
-const GAS_FOR_TRANSFER: Gas = Gas(40_000_000_000_000);
 const BASE_GAS: Gas = Gas(3_000_000_000_000);
 
 #[ext_contract(ext_tranfer_ft_token)]
@@ -82,7 +81,7 @@ impl NearP2P {
                 None,
                 contract_ft.unwrap(),
                 1,
-                GAS_FOR_TRANSFER,
+                BASE_GAS,
             );
             if fee_deducted.0 > 0 {
                 // tranfer ft_token fee al vault
@@ -92,7 +91,7 @@ impl NearP2P {
                     None,
                     self.vault.clone(),
                     1,
-                    GAS_FOR_TRANSFER,
+                    BASE_GAS,
                 );
             }
         } else {
