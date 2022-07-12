@@ -40,7 +40,7 @@ trait ExtBlockBalance {
 Near P2P Struct
 */
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct NearP2P {
     pub owner_id: AccountId,
     pub user_admin: AccountId,
@@ -64,7 +64,14 @@ impl NearP2P {
     }
 
     #[payable]    
-    pub fn transfer(&mut self, receiver_id: AccountId, operation_amount: U128, fee_deducted: U128, contract_ft: Option<AccountId>) {
+    pub fn transfer(&mut self,
+        receiver_id: AccountId,
+        operation_amount: U128,
+        fee_deducted: U128,
+        contract_ft: Option<AccountId>,
+        retiro: bool,
+        ft_token: String
+    ) {
         require!(env::attached_deposit() >= 1, "Requires attached deposit of at least 1 yoctoNEAR");
         require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
         if contract_ft.is_some() {
@@ -93,6 +100,10 @@ impl NearP2P {
             if fee_deducted.0 > 0 {
                 Promise::new(self.vault.clone()).transfer(fee_deducted.0);
             }
+        }
+        if !retiro {
+            let balance_block: Balance = *self.balance_block.get(&ft_token).or(Some(&0u128)).unwrap();
+            self.balance_block.insert(ft_token, balance_block - (operation_amount.0 - fee_deducted.0));
         }    
     }
 
@@ -116,12 +127,13 @@ impl NearP2P {
         require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
         let balance_block_near: Balance = *self.balance_block.get(&"near".to_string()).or(Some(&0u128)).unwrap();
         let balance_general: Balance = env::account_balance();
-        if (balance_general - balance_block_near) >= amount.0 {
-            self.balance_block.insert("NEAR".to_string(), balance_block_near + amount.0);
-            true
-        } else {
-            false
-        }   
+        match (balance_general - balance_block_near) >= amount.0 {
+            true => {
+                self.balance_block.insert("NEAR".to_string(), balance_block_near + amount.0);
+                true
+            },
+            _=> false,
+        }  
     }
 
     pub fn block_balance_token(&mut self,
@@ -149,7 +161,7 @@ impl NearP2P {
         ft_token: String,
         amount: U128
     ) -> bool {
-        require!(env::predecessor_account_id() == env::current_account_id() || env::predecessor_account_id() == self.user_admin, "Only administrators");
+        require!(env::predecessor_account_id() == env::current_account_id(), "Only administrators");
         env::log_str(format!("signer: {} - predecesor {}", env::signer_account_id(), env::predecessor_account_id()).as_str());
         let result = promise_result_as_success();
         if result.is_none() {
@@ -157,11 +169,12 @@ impl NearP2P {
         }
         let balance_block_token: Balance = *self.balance_block.get(&ft_token).or(Some(&0u128)).unwrap();
         let balance_general: U128 = near_sdk::serde_json::from_slice::<U128>(&result.unwrap()).expect("U128");
-        if (balance_general.0 - balance_block_token) >= amount.0 {
-            self.balance_block.insert(ft_token, balance_block_token + amount.0);
-            true
-        } else {
-            false
+        match (balance_general.0 - balance_block_token) >= amount.0 {
+            true => {
+                self.balance_block.insert(ft_token, balance_block_token + amount.0); 
+                true
+            },
+            _=> false,
         }
     }
 
