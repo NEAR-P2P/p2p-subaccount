@@ -8,6 +8,7 @@ use near_sdk::json_types::U128;
 use std::collections::HashMap;
 
 const BASE_GAS: Gas = Gas(3_000_000_000_000);
+const CONSUMO_STORAGE_NEAR_SUBCONTRACT: u128 = 1484390000000000000000000;
 
 #[ext_contract(ext_tranfer_ft_token)]
 trait ExtTranfer {
@@ -74,7 +75,6 @@ impl NearP2P {
         require!(env::attached_deposit() >= 1, "Requires attached deposit of at least 1 yoctoNEAR");
         require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
         if contract_ft.is_some() {
-            // transfer ft_token to owner
             ext_tranfer_ft_token::ft_transfer(
                 receiver_id,
                 U128(operation_amount.0 - fee_deducted.0),
@@ -84,7 +84,6 @@ impl NearP2P {
                 BASE_GAS,
             );
             if fee_deducted.0 > 0 {
-                // tranfer ft_token fee al vault
                 ext_tranfer_ft_token::ft_transfer(
                     self.vault.clone(),
                     U128(fee_deducted.0),
@@ -107,14 +106,17 @@ impl NearP2P {
     }
 
     pub fn get_balance_near(self, balance_block: bool) -> Balance {
+        let balance_general = balance_general(env::account_balance());
+        let balance_bloqueado = balance_general - *self.balance_block.get(&"NEAR".to_string()).or(Some(&0u128)).unwrap();
+        
         match balance_block {
-            false => env::account_balance(),
-            _=> env::account_balance() - *self.balance_block.get(&"NEAR".to_string()).or(Some(&0u128)).unwrap(),
+            false => balance_general,
+            _=> balance_bloqueado,
         }
     }
 
     pub fn get_balance_block_token(self, ft_token: String) -> Balance {
-        *self.balance_block.get(&ft_token).expect("The token does not have a locked balance")
+        *self.balance_block.get(&ft_token).or(Some(&0u128)).unwrap()
     }
 
     pub fn delete_contract(&mut self) {
@@ -124,8 +126,9 @@ impl NearP2P {
 
     pub fn block_balance_near(&mut self, amount: U128) -> bool {
         require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
+        let balance_general = balance_general(env::account_balance());
         let balance_block_near: Balance = *self.balance_block.get(&"near".to_string()).or(Some(&0u128)).unwrap();
-        let balance_general: Balance = env::account_balance();
+        
         match (balance_general - balance_block_near) >= amount.0 {
             true => {
                 self.balance_block.insert("NEAR".to_string(), balance_block_near + amount.0);
@@ -161,12 +164,11 @@ impl NearP2P {
         amount: U128
     ) -> bool {
         require!(env::predecessor_account_id() == env::current_account_id(), "Only administrators");
-        env::log_str(format!("signer: {} - predecesor {}", env::signer_account_id(), env::predecessor_account_id()).as_str());
         let result = promise_result_as_success();
         if result.is_none() {
             env::panic_str("Error bloquear balance token".as_ref());
         }
-        let balance_block_token: Balance = *self.balance_block.get(&ft_token).or(Some(&0u128)).unwrap();
+        let balance_block_token: u128 = *self.balance_block.get(&ft_token).or(Some(&0u128)).unwrap();
         let balance_general: U128 = near_sdk::serde_json::from_slice::<U128>(&result.unwrap()).expect("U128");
         match (balance_general.0 - balance_block_token) >= amount.0 {
             true => {
@@ -177,4 +179,13 @@ impl NearP2P {
         }
     }
 
+}
+
+fn balance_general(balance: u128) -> u128 {
+    let balance_general: u128;
+    match balance > CONSUMO_STORAGE_NEAR_SUBCONTRACT {
+        true => balance_general = balance - CONSUMO_STORAGE_NEAR_SUBCONTRACT,
+        _=> balance_general = 0,
+    }
+    balance_general
 }
