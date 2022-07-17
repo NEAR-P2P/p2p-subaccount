@@ -79,7 +79,7 @@ impl NearP2P {
                 receiver_id,
                 U128(operation_amount.0 - fee_deducted.0),
                 None,
-                contract_ft.unwrap(),
+                contract_ft.clone().unwrap(),
                 1,
                 BASE_GAS,
             );
@@ -88,7 +88,7 @@ impl NearP2P {
                     self.vault.clone(),
                     U128(fee_deducted.0),
                     None,
-                    self.vault.clone(),
+                    contract_ft.unwrap(),
                     1,
                     BASE_GAS,
                 );
@@ -105,14 +105,24 @@ impl NearP2P {
         }    
     }
 
-    pub fn get_balance_near(self, balance_block: bool) -> Balance {
+    pub fn get_balance_near(self, balance: String) -> Balance {
         let balance_general = balance_general(env::account_balance());
-        let balance_bloqueado = balance_general - *self.balance_block.get(&"NEAR".to_string()).or(Some(&0u128)).unwrap();
+        let balance_bloqueado = *self.balance_block.get(&"NEAR".to_string()).or(Some(&0u128)).unwrap();
+        let balance_libre = balance_general - balance_bloqueado;
         
-        match balance_block {
-            false => balance_general,
+        match balance.as_str() {
+            "genral" => balance_general,
+            "libre" => balance_libre,
             _=> balance_bloqueado,
         }
+    }
+
+    pub fn get_balance_block_total(self) -> Balance {
+        let mut balance_bloqueado = 0;
+        self.balance_block.iter().for_each(|(_k, v)| {
+            balance_bloqueado += v; 
+        });
+        balance_bloqueado
     }
 
     pub fn get_balance_block_token(self, ft_token: String) -> Balance {
