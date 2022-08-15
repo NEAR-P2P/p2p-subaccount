@@ -8,8 +8,8 @@ use near_sdk::json_types::U128;
 use std::collections::HashMap;
 
 const BASE_GAS: Gas = Gas(3_000_000_000_000);
-const CONSUMO_STORAGE_NEAR_SUBCONTRACT: u128 = 1484390000000000000000000;
-
+const CONSUMO_STORAGE_NEAR_SUBCONTRACT: u128 = 1485010000000000000000000;
+                    
 #[ext_contract(ext_tranfer_ft_token)]
 trait ExtTranfer {
     fn ft_transfer(&mut self,
