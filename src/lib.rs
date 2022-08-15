@@ -8,7 +8,7 @@ use near_sdk::json_types::U128;
 use std::collections::HashMap;
 
 const BASE_GAS: Gas = Gas(3_000_000_000_000);
-const CONSUMO_STORAGE_NEAR_SUBCONTRACT: u128 = 1484390000000000000000000;
+const CONSUMO_STORAGE_NEAR_SUBCONTRACT: u128 = 1504790000000000000000000;
 
 #[ext_contract(ext_tranfer_ft_token)]
 trait ExtTranfer {
@@ -101,7 +101,7 @@ impl NearP2P {
         }
         if !retiro {
             let balance_block: Balance = *self.balance_block.get(&ft_token).or(Some(&0u128)).unwrap();
-            self.balance_block.insert(ft_token, balance_block - (operation_amount.0 - fee_deducted.0));
+            self.balance_block.insert(ft_token, balance_block - operation_amount.0);
         }    
     }
 
