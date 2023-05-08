@@ -7,7 +7,6 @@ use near_sdk::{env, near_bindgen, AccountId, Promise, ext_contract, Gas, Balance
 use near_sdk::json_types::U128;
 
 const BASE_GAS: Gas = Gas(3_000_000_000_000);
-const CONSUMO_STORAGE_NEAR_SUBCONTRACT: u128 = 1131905000000000000000000;
                     
 #[ext_contract(ext_tranfer_ft_token)]
 trait ExtTranfer {
@@ -30,6 +29,7 @@ pub struct NearP2P {
     pub owner_id: AccountId,
     pub user_admin: AccountId,
     pub vault: AccountId,
+    pub consumo_storage_near_subcontract: u128,
 }
 
 
@@ -37,12 +37,13 @@ pub struct NearP2P {
 #[near_bindgen]
 impl NearP2P {
     #[init]
-    pub fn new(owner_id: AccountId, user_admin: AccountId, vault: AccountId) -> Self {
+    pub fn new(owner_id: AccountId, user_admin: AccountId, vault: AccountId, consumo_storage_near_subcontract: u128) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         Self { 
             owner_id: owner_id, 
             user_admin: user_admin,
             vault: vault,
+            consumo_storage_near_subcontract: consumo_storage_near_subcontract,
         }
     }
 
@@ -84,7 +85,12 @@ impl NearP2P {
     }
 
     pub fn get_balance_near(self) -> Balance {
-        let balance_general = balance_general(env::account_balance());
+        let mut balance_general = env::account_balance();
+
+        match balance_general > self.consumo_storage_near_subcontract {
+            true => balance_general = balance_general - self.consumo_storage_near_subcontract,
+            _=> balance_general = 0,
+        }
         
         balance_general
     }
@@ -94,13 +100,4 @@ impl NearP2P {
         Promise::new(AccountId::from(env::current_account_id())).delete_account(self.owner_id.clone());
     }
 
-}
-
-fn balance_general(balance: u128) -> u128 {
-    let balance_general: u128;
-    match balance > CONSUMO_STORAGE_NEAR_SUBCONTRACT {
-        true => balance_general = balance - CONSUMO_STORAGE_NEAR_SUBCONTRACT,
-        _=> balance_general = 0,
-    }
-    balance_general
 }
