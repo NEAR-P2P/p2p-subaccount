@@ -3,7 +3,7 @@ MIT license
 Develop by GlobalDv @2022
 */
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{env, near_bindgen, AccountId, Promise, ext_contract, Gas, Balance, require, PanicOnDefault};
+use near_sdk::{env, near_bindgen, AccountId, Promise, ext_contract, Gas, PanicOnDefault};
 use near_sdk::json_types::U128;
 
 const BASE_GAS: Gas = Gas(3_000_000_000_000);
@@ -54,8 +54,8 @@ impl NearP2P {
         fee_deducted: U128,
         contract_ft: Option<AccountId>,
     ) {
-        require!(env::attached_deposit() >= 1, "Requires attached deposit of at least 1 yoctoNEAR");
-        require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
+        assert!(env::attached_deposit() >= 1, "Requires attached deposit of at least 1 yoctoNEAR");
+        assert!(env::predecessor_account_id() == self.user_admin, "Only administrators");
         if contract_ft.is_some() {
             ext_tranfer_ft_token::ft_transfer(
                 receiver_id,
@@ -84,7 +84,7 @@ impl NearP2P {
             
     }
 
-    pub fn get_balance_near(self) -> Balance {
+    pub fn get_balance_near(self) -> u128 {
         let mut balance_general = env::account_balance();
 
         match balance_general > self.consumo_storage_near_subcontract {
@@ -96,7 +96,7 @@ impl NearP2P {
     }
 
     pub fn delete_contract(&mut self) {
-        require!(env::predecessor_account_id() == self.user_admin, "Only administrators");
+        assert!(env::predecessor_account_id() == self.user_admin, "Only administrators");
         Promise::new(AccountId::from(env::current_account_id())).delete_account(self.owner_id.clone());
     }
 
